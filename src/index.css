@@ -1,0 +1,136 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500&display=swap');
+
+:root {
+  /* Crisp, patriotic CANZUK color palette */
+  --bg-color: #FAFAFA;
+  --bg-panel: #FFFFFF;
+  --primary-accent: #D80621; /* Strong Red (Canada/UK/Aus/NZ flags) */
+  --secondary-accent: #00247D; /* Deep Royal blue */
+  --text-main: #1A202C;
+  --text-muted: #4A5568;
+  --border-color: #E2E8F0;
+  
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.1);
+  
+  --font-heading: 'Poppins', sans-serif;
+  --font-body: 'Inter', sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  font-family: var(--font-body);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.2;
+}
+
+h1 { font-size: clamp(2.5rem, 5vw, 4rem); letter-spacing: -0.02em; }
+h2 { font-size: clamp(2rem, 3vw, 2.5rem); letter-spacing: -0.01em; }
+h3 { font-size: clamp(1.25rem, 2vw, 1.75rem); }
+
+a {
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s ease;
+}
+
+/* Base Layout Constraints */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+main {
+  flex-grow: 1;
+  padding-top: 100px; /* offset for fixed navbar */
+}
+
+/* Beautiful modern cards */
+.card {
+  background: var(--bg-panel);
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Forms */
+.input-field {
+  width: 100%;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--text-main);
+  background-color: #F7FAFC;
+  transition: all 0.2s ease;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: var(--secondary-accent);
+  background-color: var(--bg-panel);
+  box-shadow: 0 0 0 3px rgba(0, 36, 125, 0.15); /* Updated focus ring to blue */
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 2rem;
+  background-color: var(--primary-accent);
+  color: white;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 1rem;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(216, 6, 33, 0.3);
+}
+
+.btn-primary:hover {
+  background-color: #B8051C; /* Darker red */
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(216, 6, 33, 0.4);
+}
+
+.image-rounded {
+  border-radius: 24px;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  box-shadow: var(--shadow-lg);
+}
