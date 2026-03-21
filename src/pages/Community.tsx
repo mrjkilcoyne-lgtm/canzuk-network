@@ -139,6 +139,39 @@ const INITIAL_FIRMS: Firm[] = [
     recommendations: [
       { id: 'r9', author: MOCK_USERS.u3, text: 'Forget the standard letting agents, they often require 6 months rent upfront without a UK guarantor. KIL is the best place to find a friendly flatshare with people who get it.', rating: 5, timestamp: '1w ago' }
     ]
+  },
+  {
+    id: '9',
+    name: 'The Redback',
+    location: 'Fulham, London, UK',
+    type: 'Other',
+    status: 'approved',
+    addedAt: '5h ago',
+    recommendations: [
+      { id: 'r10', author: MOCK_USERS.u1, text: 'The OG Aussie pub in London. Wild party nights, Australian tunes, craft beers from Australia and NZ. 18 HD screens for sport.', rating: 4, timestamp: '10h ago' }
+    ]
+  },
+  {
+    id: '10',
+    name: 'Revolut',
+    location: 'London, UK (App)',
+    type: 'Financial Services',
+    status: 'approved',
+    addedAt: '2d ago',
+    recommendations: [
+      { id: 'r11', author: MOCK_USERS.u2, text: 'Digital-first banking that actually works for people who move between countries. Hold GBP, AUD, CAD, NZD in one account.', rating: 5, timestamp: '1w ago' }
+    ]
+  },
+  {
+    id: '11',
+    name: 'Victory Services Club',
+    location: 'Marble Arch, London',
+    type: 'Other',
+    status: 'approved',
+    addedAt: '12h ago',
+    recommendations: [
+      { id: 'r12', author: MOCK_USERS.u3, text: 'The only military club in London open to ALL ranks from UK, Commonwealth and NATO forces. Free membership for serving personnel.', rating: 5, timestamp: '2d ago' }
+    ]
   }
 ];
 
@@ -146,7 +179,7 @@ export default function Community() {
   const [activeTab, setActiveTab] = useState<'feed' | 'directory' | 'submit' | 'matches' | 'panic' | 'housing'>('feed');
   
   const [firms, setFirms] = useState<Firm[]>(() => {
-    const saved = localStorage.getItem('canzuk_network_firms_v2');
+    const saved = localStorage.getItem('canzuk_network_firms_v3');
     return saved ? JSON.parse(saved) : INITIAL_FIRMS;
   });
 
@@ -163,7 +196,7 @@ export default function Community() {
   const mapUrlRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    localStorage.setItem('canzuk_network_firms_v2', JSON.stringify(firms));
+    localStorage.setItem('canzuk_network_firms_v3', JSON.stringify(firms));
   }, [firms]);
 
   // Load Google Places API Autocomplete when the "submit" tab is active
@@ -296,7 +329,7 @@ export default function Community() {
       
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-        <h1 style={{ marginBottom: '1rem' }}>Welcome Home 🏡</h1>
+        <h1 style={{ marginBottom: '1rem' }}>Welcome BACK 🏡</h1>
         <p style={{ color: 'var(--text-muted)', maxWidth: '600px', margin: '0 auto', fontSize: '1.1rem', lineHeight: '1.6' }}>
           Discover the places, faces, and spaces loved by our global family. 
           Grab a cuppa, explore genuine recommendations, and share the local gems that made you feel at home.

@@ -7,8 +7,10 @@ export default function Navbar() {
   const links = [
     { name: 'Home', path: '/' },
     { name: 'Community Hub', path: '/community' },
+    { name: 'OS Guides', path: '/guides' },
     { name: 'Civic Duty', path: '/civic' },
     { name: 'Our Mission', path: '/about' },
+    { name: 'Premium', path: '/subscribe' },
   ];
 
   return (
