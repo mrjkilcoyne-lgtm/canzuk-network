@@ -1,0 +1,27 @@
+{
+  "name": "canzuk-intel-agents",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "sweep": "tsx src/cli.ts sweep",
+    "sweep:dry": "tsx src/cli.ts sweep --dry",
+    "report": "tsx src/cli.ts report",
+    "report:latest": "tsx src/cli.ts report --latest"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "better-sqlite3": "^11.0.0",
+    "google-play-scraper": "^9.1.0",
+    "app-store-scraper": "^0.18.0",
+    "cheerio": "^1.0.0",
+    "uuid": "^10.0.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "@types/better-sqlite3": "^7.6.0",
+    "@types/uuid": "^10.0.0",
+    "typescript": "~5.9.3",
+    "@types/node": "^22.0.0"
+  }
+}

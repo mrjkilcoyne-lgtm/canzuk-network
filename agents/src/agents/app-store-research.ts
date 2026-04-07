@@ -1,0 +1,128 @@
+import { v4 as uuid } from 'uuid';
+import { BaseAgent } from './base-agent.js';
+import { searchGooglePlay } from '../scrapers/google-play.js';
+import { searchAppleAppStore } from '../scrapers/apple-app-store.js';
+import { fetchPrivacyPolicy } from '../scrapers/privacy-policy.js';
+import { SEARCH_TERMS, MAX_RESULTS_PER_TERM, MAX_APPS_PER_SWEEP } from '../config/search-terms.js';
+import type { DiscoveredApp, PrivacyPolicyAnalysis } from '../models/types.js';
+
+export class AppStoreResearchAgent extends BaseAgent {
+  name = 'AppStoreResearch';
+
+  async run(): Promise<void> {
+    await this.runWithErrorHandling(async () => {
+      const seen = new Set<string>(); // bundle_id + platform dedup
+      const apps: DiscoveredApp[] = [];
+
+      this.log(`Searching ${SEARCH_TERMS.length} terms across both stores...`);
+
+      for (const term of SEARCH_TERMS) {
+        if (apps.length >= MAX_APPS_PER_SWEEP) {
+          this.log(`Hit max apps limit (${MAX_APPS_PER_SWEEP}), stopping search.`);
+          break;
+        }
+
+        // Search both stores in parallel
+        const [googleResults, appleResults] = await Promise.all([
+          searchGooglePlay(term, MAX_RESULTS_PER_TERM),
+          searchAppleAppStore(term, MAX_RESULTS_PER_TERM),
+        ]);
+
+        // Process Google Play results
+        for (const gApp of googleResults) {
+          const key = `google:${gApp.appId}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+
+          const app: DiscoveredApp = {
+            id: uuid(),
+            sweepId: this.ctx.sweepId,
+            appName: gApp.title,
+            platform: 'google',
+            storeUrl: gApp.url,
+            bundleId: gApp.appId,
+            developer: gApp.developer,
+            ownershipCountry: 'Unknown', // Enriched later by DatabaseBuilder
+            hqLocation: 'Unknown',
+            category: gApp.genre,
+            description: gApp.description,
+            rating: gApp.score,
+            downloadEstimate: gApp.installs,
+            releaseDate: gApp.released,
+            lastUpdated: gApp.updated ? new Date(gApp.updated).toISOString() : null,
+            discoveredAt: new Date().toISOString(),
+          };
+
+          apps.push(app);
+
+          // Fetch and store privacy policy if available
+          if (gApp.privacyPolicy) {
+            await this.fetchAndStorePrivacyPolicy(app.id, gApp.privacyPolicy);
+          }
+        }
+
+        // Process Apple App Store results
+        for (const aApp of appleResults) {
+          const key = `apple:${aApp.appId}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+
+          const app: DiscoveredApp = {
+            id: uuid(),
+            sweepId: this.ctx.sweepId,
+            appName: aApp.title,
+            platform: 'apple',
+            storeUrl: aApp.url,
+            bundleId: aApp.appId,
+            developer: aApp.developer,
+            ownershipCountry: 'Unknown',
+            hqLocation: 'Unknown',
+            category: aApp.genre,
+            description: aApp.description,
+            rating: aApp.score,
+            downloadEstimate: null,
+            releaseDate: aApp.released,
+            lastUpdated: aApp.updated,
+            discoveredAt: new Date().toISOString(),
+          };
+
+          apps.push(app);
+
+          if (aApp.privacyPolicy) {
+            await this.fetchAndStorePrivacyPolicy(app.id, aApp.privacyPolicy);
+          }
+        }
+
+        this.log(`"${term}": ${googleResults.length} Google + ${appleResults.length} Apple results. Total unique: ${apps.length}`);
+      }
+
+      // Store all discovered apps
+      for (const app of apps) {
+        this.db.insertApp(app);
+      }
+
+      this.db.updateSweepRun(this.ctx.sweepId, { appsFound: apps.length });
+      this.log(`Stored ${apps.length} unique apps in database.`);
+    });
+  }
+
+  private async fetchAndStorePrivacyPolicy(appId: string, policyUrl: string): Promise<void> {
+    try {
+      const text = await fetchPrivacyPolicy(policyUrl);
+      const analysis: PrivacyPolicyAnalysis = {
+        id: uuid(),
+        appId,
+        policyUrl,
+        policyText: text,
+        dataCollected: [],     // Filled in by legal agents
+        thirdPartySharing: [], // Filled in by legal agents
+        retentionPolicy: null,
+        summary: '',
+        analysedAt: new Date().toISOString(),
+      };
+      this.db.insertPrivacyAnalysis(analysis);
+    } catch {
+      // Non-fatal — some policies are behind CAPTCHAs or geo-blocks
+    }
+  }
+}
