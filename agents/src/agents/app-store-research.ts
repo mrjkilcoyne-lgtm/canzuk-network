@@ -11,8 +11,10 @@ export class AppStoreResearchAgent extends BaseAgent {
 
   async run(): Promise<void> {
     await this.runWithErrorHandling(async () => {
-      const seen = new Set<string>(); // bundle_id + platform dedup
+      const seen = new Set<string>(); // bundle_id + platform dedup within this sweep
       const apps: DiscoveredApp[] = [];
+      let newCount = 0;
+      let returningCount = 0;
 
       this.log(`Searching ${SEARCH_TERMS.length} terms across both stores...`);
 
@@ -34,6 +36,9 @@ export class AppStoreResearchAgent extends BaseAgent {
           if (seen.has(key)) continue;
           seen.add(key);
 
+          const isNew = !this.db.appExistsPreviously(gApp.appId, 'google');
+          if (isNew) newCount++; else returningCount++;
+
           const app: DiscoveredApp = {
             id: uuid(),
             sweepId: this.ctx.sweepId,
@@ -51,12 +56,13 @@ export class AppStoreResearchAgent extends BaseAgent {
             releaseDate: gApp.released,
             lastUpdated: gApp.updated ? new Date(gApp.updated).toISOString() : null,
             discoveredAt: new Date().toISOString(),
+            isNew,
           };
 
           apps.push(app);
 
-          // Fetch and store privacy policy if available
-          if (gApp.privacyPolicy) {
+          // Fetch and store privacy policy if available (only for new apps)
+          if (isNew && gApp.privacyPolicy) {
             await this.fetchAndStorePrivacyPolicy(app.id, gApp.privacyPolicy);
           }
         }
@@ -66,6 +72,9 @@ export class AppStoreResearchAgent extends BaseAgent {
           const key = `apple:${aApp.appId}`;
           if (seen.has(key)) continue;
           seen.add(key);
+
+          const isNew = !this.db.appExistsPreviously(aApp.appId, 'apple');
+          if (isNew) newCount++; else returningCount++;
 
           const app: DiscoveredApp = {
             id: uuid(),
@@ -84,11 +93,12 @@ export class AppStoreResearchAgent extends BaseAgent {
             releaseDate: aApp.released,
             lastUpdated: aApp.updated,
             discoveredAt: new Date().toISOString(),
+            isNew,
           };
 
           apps.push(app);
 
-          if (aApp.privacyPolicy) {
+          if (isNew && aApp.privacyPolicy) {
             await this.fetchAndStorePrivacyPolicy(app.id, aApp.privacyPolicy);
           }
         }
@@ -96,13 +106,16 @@ export class AppStoreResearchAgent extends BaseAgent {
         this.log(`"${term}": ${googleResults.length} Google + ${appleResults.length} Apple results. Total unique: ${apps.length}`);
       }
 
-      // Store all discovered apps
+      // Store only genuinely new apps (INSERT OR IGNORE handles DB-level dedup)
       for (const app of apps) {
         this.db.insertApp(app);
       }
 
-      this.db.updateSweepRun(this.ctx.sweepId, { appsFound: apps.length });
-      this.log(`Stored ${apps.length} unique apps in database.`);
+      this.db.updateSweepRun(this.ctx.sweepId, { appsFound: newCount });
+      this.log(`Discovered ${apps.length} unique apps: ${newCount} NEW, ${returningCount} previously seen.`);
+      if (returningCount > 0) {
+        this.log(`Skipped ${returningCount} previously-seen apps — only new entries will be analysed.`);
+      }
     });
   }
 

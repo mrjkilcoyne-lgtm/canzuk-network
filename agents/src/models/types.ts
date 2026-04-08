@@ -29,6 +29,7 @@ export interface DiscoveredApp {
   releaseDate: string | null;
   lastUpdated: string | null;
   discoveredAt: string;
+  isNew: boolean; // true if first seen in this sweep, false if previously discovered
 }
 
 export interface PrivacyPolicyAnalysis {

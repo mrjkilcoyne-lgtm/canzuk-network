@@ -1,0 +1,63 @@
+name: Weekly Intel Sweep
+
+on:
+  schedule:
+    # Every Monday at 06:00 UTC
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (scrape only, no LLM analysis)'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: npm
+          cache-dependency-path: agents/package-lock.json
+
+      - name: Install agent dependencies
+        working-directory: agents
+        run: npm ci
+
+      - name: Create data directories
+        working-directory: agents
+        run: mkdir -p data/reports
+
+      - name: Run intelligence sweep
+        working-directory: agents
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            npm run sweep:dry
+          else
+            npm run sweep
+          fi
+
+      - name: Upload sweep report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sweep-report-${{ github.run_number }}
+          path: agents/data/reports/
+          retention-days: 90
+
+      - name: Upload database snapshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: intel-db-${{ github.run_number }}
+          path: agents/data/intel.db
+          retention-days: 90

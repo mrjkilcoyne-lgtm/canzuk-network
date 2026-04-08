@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3';
-import { readFileSync } from 'fs';
+import { readFileSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import type {
@@ -15,6 +15,7 @@ export class IntelDatabase {
 
   constructor(dbPath?: string) {
     const resolvedPath = dbPath ?? join(__dirname, '../../data/intel.db');
+    mkdirSync(dirname(resolvedPath), { recursive: true });
     this.db = new Database(resolvedPath);
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('foreign_keys = ON');
@@ -79,18 +80,27 @@ export class IntelDatabase {
 
   // ---- Discovered Apps ----
 
+  /** Check if an app with this bundle_id + platform already exists from a previous sweep */
+  appExistsPreviously(bundleId: string, platform: string): boolean {
+    const row = this.db.prepare(
+      'SELECT 1 FROM discovered_apps WHERE bundle_id = ? AND platform = ?'
+    ).get(bundleId, platform);
+    return !!row;
+  }
+
   insertApp(app: DiscoveredApp): void {
     this.db.prepare(`
       INSERT OR IGNORE INTO discovered_apps
       (id, sweep_id, app_name, platform, store_url, bundle_id, developer,
        ownership_country, hq_location, category, description, rating,
-       download_estimate, release_date, last_updated, discovered_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       download_estimate, release_date, last_updated, discovered_at, is_new)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       app.id, app.sweepId, app.appName, app.platform, app.storeUrl,
       app.bundleId, app.developer, app.ownershipCountry, app.hqLocation,
       app.category, app.description, app.rating, app.downloadEstimate,
       app.releaseDate, app.lastUpdated, app.discoveredAt,
+      app.isNew ? 1 : 0,
     );
   }
 
@@ -106,6 +116,11 @@ export class IntelDatabase {
 
   getAllApps(): DiscoveredApp[] {
     const rows = this.db.prepare('SELECT * FROM discovered_apps ORDER BY discovered_at DESC').all() as Record<string, unknown>[];
+    return rows.map(this.mapApp);
+  }
+
+  getNewAppsForSweep(sweepId: string): DiscoveredApp[] {
+    const rows = this.db.prepare('SELECT * FROM discovered_apps WHERE sweep_id = ? AND is_new = 1').all(sweepId) as Record<string, unknown>[];
     return rows.map(this.mapApp);
   }
 
@@ -127,6 +142,7 @@ export class IntelDatabase {
       releaseDate: row.release_date as string | null,
       lastUpdated: row.last_updated as string | null,
       discoveredAt: row.discovered_at as string,
+      isNew: row.is_new === 1,
     };
   }
 

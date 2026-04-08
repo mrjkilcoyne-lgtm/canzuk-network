@@ -1,4 +1,4 @@
-import { writeFileSync } from 'fs';
+import { writeFileSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { IntelDatabase } from '../db/database.js';
@@ -122,6 +122,9 @@ export function generateReport(sweepId: string, dbPath?: string): string {
     }
 
     const markdown = lines.join('\n');
+
+    // Ensure reports directory exists
+    mkdirSync(REPORTS_DIR, { recursive: true });
 
     // Write files
     const dateStr = new Date().toISOString().split('T')[0];

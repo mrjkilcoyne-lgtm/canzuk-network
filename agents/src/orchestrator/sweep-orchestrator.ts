@@ -87,9 +87,15 @@ export async function runSweep(options: SweepOptions = {}): Promise<string> {
     });
 
     const usage = llm.getUsage();
+    const sweepResult = db.getSweepRun(sweepId);
+    const allSweepApps = db.getAppsForSweep(sweepId);
+    const newApps = db.getNewAppsForSweep(sweepId);
     console.log(`\n${'='.repeat(60)}`);
     console.log(`  SWEEP COMPLETE`);
-    console.log(`  Apps found: ${db.getSweepRun(sweepId)?.appsFound ?? 0}`);
+    console.log(`  New apps this sweep: ${sweepResult?.appsFound ?? 0}`);
+    console.log(`  Total apps processed: ${allSweepApps.length}`);
+    console.log(`  New entries analysed: ${newApps.length}`);
+    console.log(`  Total apps in DB: ${db.getAllApps().length}`);
     console.log(`  Token usage: ${usage.totalTokens.toLocaleString()} total`);
     console.log(`    Input:  ${usage.inputTokens.toLocaleString()}`);
     console.log(`    Output: ${usage.outputTokens.toLocaleString()}`);

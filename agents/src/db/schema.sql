@@ -26,7 +26,8 @@ CREATE TABLE IF NOT EXISTS discovered_apps (
   download_estimate TEXT,
   release_date TEXT,
   last_updated TEXT,
-  discovered_at TEXT NOT NULL
+  discovered_at TEXT NOT NULL,
+  is_new INTEGER NOT NULL DEFAULT 1  -- 1 = first seen this sweep, 0 = previously discovered
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_apps_bundle_platform
