@@ -161,6 +161,18 @@ export class IntelDatabase {
     );
   }
 
+  updatePrivacyAnalysis(appId: string, updates: Partial<Pick<PrivacyPolicyAnalysis, 'dataCollected' | 'thirdPartySharing' | 'retentionPolicy' | 'summary'>>): void {
+    const fields: string[] = [];
+    const values: unknown[] = [];
+    if (updates.dataCollected !== undefined) { fields.push('data_collected = ?'); values.push(JSON.stringify(updates.dataCollected)); }
+    if (updates.thirdPartySharing !== undefined) { fields.push('third_party_sharing = ?'); values.push(JSON.stringify(updates.thirdPartySharing)); }
+    if (updates.retentionPolicy !== undefined) { fields.push('retention_policy = ?'); values.push(updates.retentionPolicy); }
+    if (updates.summary !== undefined) { fields.push('summary = ?'); values.push(updates.summary); }
+    if (fields.length === 0) return;
+    values.push(appId);
+    this.db.prepare(`UPDATE privacy_policy_analyses SET ${fields.join(', ')} WHERE app_id = ?`).run(...values);
+  }
+
   getPrivacyAnalysis(appId: string): PrivacyPolicyAnalysis | undefined {
     const row = this.db.prepare('SELECT * FROM privacy_policy_analyses WHERE app_id = ?').get(appId) as Record<string, unknown> | undefined;
     if (!row) return undefined;

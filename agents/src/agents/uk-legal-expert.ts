@@ -11,6 +11,10 @@ interface LegalLLMResponse {
   riskLevel: 'low' | 'medium' | 'high' | 'critical';
   findings: string[];
   recommendations: string[];
+  dataCollected: string[];
+  thirdPartySharing: string[];
+  retentionPolicy: string | null;
+  privacySummary: string;
 }
 
 export class UKLegalExpertAgent extends BaseAgent {
@@ -52,7 +56,11 @@ Respond with JSON:
   "dataTransferMechanism": "mechanism or null",
   "riskLevel": "low|medium|high|critical",
   "findings": ["finding 1", "finding 2"],
-  "recommendations": ["rec 1", "rec 2"]
+  "recommendations": ["rec 1", "rec 2"],
+  "dataCollected": ["list of personal data types collected"],
+  "thirdPartySharing": ["list of third parties data is shared with"],
+  "retentionPolicy": "summary of data retention periods or null",
+  "privacySummary": "2-3 sentence plain-English summary of the privacy policy"
 }`;
 
           const result = await this.llm.askJson<LegalLLMResponse>(
@@ -75,6 +83,16 @@ Respond with JSON:
           };
 
           this.db.insertLegalAssessment(assessment);
+
+          if (privacy) {
+            this.db.updatePrivacyAnalysis(app.id, {
+              dataCollected: result.dataCollected,
+              thirdPartySharing: result.thirdPartySharing,
+              retentionPolicy: result.retentionPolicy,
+              summary: result.privacySummary,
+            });
+          }
+
           this.log(`UK assessed ${app.appName}: risk=${result.riskLevel}`);
         } catch (error) {
           this.log(`UK assessment failed for ${app.appName}: ${error instanceof Error ? error.message : error}`);

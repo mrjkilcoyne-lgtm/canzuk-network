@@ -22,3 +22,11 @@ jobs:
       - run: npm ci
       - run: npm run build --if-present
       - run: npm test --if-present
+
+      - name: Install agent dependencies
+        working-directory: agents
+        run: npm ci
+
+      - name: Type-check agents
+        working-directory: agents
+        run: npx tsc --noEmit

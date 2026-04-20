@@ -29,7 +29,7 @@ export class LLMClient {
       );
     }
 
-    const model = options?.model ?? 'claude-sonnet-4-20250514';
+    const model = options?.model ?? 'claude-sonnet-4-6';
     const maxTokens = options?.maxTokens ?? 4096;
 
     const response = await this.client.messages.create({

@@ -127,7 +127,7 @@ Respond with JSON:
           const result = await this.llm.askJson<StrategyLLMResponse>(
             GRAND_STRATEGY_PROMPT,
             userMessage,
-            { model: 'claude-sonnet-4-20250514' }, // Use Sonnet for cost efficiency at scale
+            { model: 'claude-sonnet-4-6' },
           );
 
           // Store the primary (overall) recommendation
