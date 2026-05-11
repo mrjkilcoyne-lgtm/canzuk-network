@@ -124,6 +124,12 @@ export class IntelDatabase {
     return rows.map(this.mapApp);
   }
 
+  updateAppLocation(appId: string, ownershipCountry: string, hqLocation: string): void {
+    this.db.prepare(
+      'UPDATE discovered_apps SET ownership_country = ?, hq_location = ? WHERE id = ?'
+    ).run(ownershipCountry, hqLocation, appId);
+  }
+
   private mapApp(row: Record<string, unknown>): DiscoveredApp {
     return {
       id: row.id as string,

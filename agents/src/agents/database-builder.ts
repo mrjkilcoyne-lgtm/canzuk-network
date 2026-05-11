@@ -75,14 +75,12 @@ Include at least:
             userMessage,
           );
 
-          // Update app with enriched location data (re-insert with OR IGNORE handles dedup)
-          // We update via direct SQL since the helper uses INSERT OR IGNORE
           if (result.ownershipCountry || result.hqLocation) {
-            const updatedApp = { ...app };
-            if (result.ownershipCountry) updatedApp.ownershipCountry = result.ownershipCountry;
-            if (result.hqLocation) updatedApp.hqLocation = result.hqLocation;
-            // Direct update since insertApp uses OR IGNORE
-            this.updateAppLocation(app.id, result.ownershipCountry, result.hqLocation);
+            this.db.updateAppLocation(
+              app.id,
+              result.ownershipCountry || app.ownershipCountry,
+              result.hqLocation || app.hqLocation,
+            );
           }
 
           // Store contacts
@@ -107,16 +105,5 @@ Include at least:
         }
       }
     });
-  }
-
-  private updateAppLocation(appId: string, country: string, hq: string): void {
-    try {
-      // Access internal db handle for a direct update not in the standard helpers
-      (this.db as any).db.prepare(  // eslint-disable-line @typescript-eslint/no-explicit-any
-        'UPDATE discovered_apps SET ownership_country = ?, hq_location = ? WHERE id = ?'
-      ).run(country, hq, appId);
-    } catch {
-      // Non-fatal
-    }
   }
 }
