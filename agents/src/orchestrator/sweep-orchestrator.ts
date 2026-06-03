@@ -59,6 +59,19 @@ export async function runSweep(options: SweepOptions = {}): Promise<string> {
       return sweepId;
     }
 
+    const newApps = db.getNewAppsForSweep(sweepId);
+    if (newApps.length === 0) {
+      console.log('\nNo new apps discovered this sweep — skipping analysis stages.');
+      db.updateSweepRun(sweepId, {
+        status: 'completed',
+        completedAt: new Date().toISOString(),
+      });
+      db.close();
+      return sweepId;
+    }
+
+    console.log(`\n${newApps.length} new apps to analyse (skipping ${db.getAppsForSweep(sweepId).length - newApps.length} previously seen).\n`);
+
     // ─── Stage 2: Disruption Analysis ─────────────────────────
     console.log('\n--- Stage 2: Disruption Analysis ---');
     const disruptionAnalyst = new DisruptionAnalystAgent(db, llm, ctx);
@@ -89,12 +102,12 @@ export async function runSweep(options: SweepOptions = {}): Promise<string> {
     const usage = llm.getUsage();
     const sweepResult = db.getSweepRun(sweepId);
     const allSweepApps = db.getAppsForSweep(sweepId);
-    const newApps = db.getNewAppsForSweep(sweepId);
+    const analysedApps = db.getNewAppsForSweep(sweepId);
     console.log(`\n${'='.repeat(60)}`);
     console.log(`  SWEEP COMPLETE`);
     console.log(`  New apps this sweep: ${sweepResult?.appsFound ?? 0}`);
     console.log(`  Total apps processed: ${allSweepApps.length}`);
-    console.log(`  New entries analysed: ${newApps.length}`);
+    console.log(`  New entries analysed: ${analysedApps.length}`);
     console.log(`  Total apps in DB: ${db.getAllApps().length}`);
     console.log(`  Token usage: ${usage.totalTokens.toLocaleString()} total`);
     console.log(`    Input:  ${usage.inputTokens.toLocaleString()}`);

@@ -271,7 +271,7 @@ export class IntelDatabase {
 
   insertContact(contact: ContactInfo): void {
     this.db.prepare(`
-      INSERT INTO contacts (id, app_id, entity_type, name, email, phone, website, linkedin, notes)
+      INSERT OR REPLACE INTO contacts (id, app_id, entity_type, name, email, phone, website, linkedin, notes)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       contact.id, contact.appId, contact.entityType, contact.name,
@@ -308,7 +308,15 @@ export class IntelDatabase {
   }
 
   getRecommendationsForSweep(sweepId: string): StrategicRecommendation[] {
-    const rows = this.db.prepare('SELECT * FROM strategic_recommendations WHERE sweep_id = ? ORDER BY priority DESC').all(sweepId) as Record<string, unknown>[];
+    const rows = this.db.prepare(`
+      SELECT * FROM strategic_recommendations WHERE sweep_id = ?
+      ORDER BY CASE priority
+        WHEN 'urgent' THEN 1
+        WHEN 'high'   THEN 2
+        WHEN 'medium' THEN 3
+        WHEN 'low'    THEN 4
+      END
+    `).all(sweepId) as Record<string, unknown>[];
     return rows.map(row => ({
       id: row.id as string,
       sweepId: row.sweep_id as string,

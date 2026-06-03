@@ -86,6 +86,9 @@ CREATE TABLE IF NOT EXISTS contacts (
   notes TEXT
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_contacts_dedup
+  ON contacts(app_id, entity_type, name);
+
 CREATE TABLE IF NOT EXISTS strategic_recommendations (
   id TEXT PRIMARY KEY,
   sweep_id TEXT NOT NULL REFERENCES sweep_runs(id),

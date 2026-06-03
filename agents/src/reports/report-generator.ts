@@ -59,7 +59,6 @@ export function generateReport(sweepId: string, dbPath?: string): string {
     lines.push(`## Full App Analysis`);
     for (const app of apps) {
       const intel = db.getFullAppIntel(app.id);
-      const rec = recommendations.find(r => r.appId === app.id);
       const contacts = db.getContacts(app.id);
 
       lines.push(`### ${app.appName}`);
@@ -107,12 +106,17 @@ export function generateReport(sweepId: string, dbPath?: string): string {
         lines.push('');
       }
 
-      if (rec) {
-        lines.push(`**Strategic Recommendation:** ${rec.action} (${rec.priority})`);
-        lines.push(`> ${rec.rationale}`);
-        if (rec.suggestedPitch) {
-          lines.push(`\n**Draft Pitch:**`);
-          lines.push(`> ${rec.suggestedPitch.replace(/\n/g, '\n> ')}`);
+      const appRecs = recommendations.filter(r => r.appId === app.id);
+      if (appRecs.length > 0) {
+        lines.push(`**Strategic Recommendations**`);
+        for (const rec of appRecs) {
+          lines.push(`- **${rec.action.toUpperCase()}** (${rec.priority}): ${rec.rationale}`);
+          if (rec.suggestedPitch) {
+            lines.push(`  > **Pitch:** ${rec.suggestedPitch.replace(/\n/g, '\n  > ')}`);
+          }
+          if (rec.targetContact) {
+            lines.push(`  > **Target:** ${rec.targetContact}`);
+          }
         }
         lines.push('');
       }
@@ -140,7 +144,7 @@ export function generateReport(sweepId: string, dbPath?: string): string {
         ...app,
         ...db.getFullAppIntel(app.id),
         contacts: db.getContacts(app.id),
-        recommendation: recommendations.find(r => r.appId === app.id) ?? null,
+        recommendations: recommendations.filter(r => r.appId === app.id),
       })),
       recommendations,
     };

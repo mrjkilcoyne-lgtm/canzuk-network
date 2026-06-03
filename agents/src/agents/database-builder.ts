@@ -22,8 +22,8 @@ export class DatabaseBuilderAgent extends BaseAgent {
 
   async run(): Promise<void> {
     await this.runWithErrorHandling(async () => {
-      const apps = this.db.getAppsForSweep(this.ctx.sweepId);
-      this.log(`Enriching data and building contacts for ${apps.length} apps...`);
+      const apps = this.db.getNewAppsForSweep(this.ctx.sweepId);
+      this.log(`Enriching data and building contacts for ${apps.length} new apps...`);
 
       for (const app of apps) {
         if (this.ctx.dryRun) {

@@ -21,8 +21,8 @@ export class EULegalExpertAgent extends BaseAgent {
 
   async run(): Promise<void> {
     await this.runWithErrorHandling(async () => {
-      const apps = this.db.getAppsForSweep(this.ctx.sweepId);
-      this.log(`EU legal assessment for ${apps.length} apps...`);
+      const apps = this.db.getNewAppsForSweep(this.ctx.sweepId);
+      this.log(`EU legal assessment for ${apps.length} new apps...`);
 
       for (const app of apps) {
         if (this.ctx.dryRun) {
