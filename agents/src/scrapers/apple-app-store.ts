@@ -15,13 +15,13 @@ export interface AppStoreApp {
   developerWebsite: string | null;
 }
 
-export async function searchAppleAppStore(term: string, maxResults = 15): Promise<AppStoreApp[]> {
+export async function searchAppleAppStore(term: string, maxResults = 15, country = 'gb'): Promise<AppStoreApp[]> {
   try {
     const results = await store.search({
       term,
       num: maxResults,
-      lang: 'en-gb',
-      country: 'gb',
+      lang: 'en',
+      country,
     });
 
     return results.map((app: Record<string, unknown>) => ({
@@ -44,9 +44,9 @@ export async function searchAppleAppStore(term: string, maxResults = 15): Promis
   }
 }
 
-export async function getAppleAppDetails(appId: string | number): Promise<AppStoreApp | null> {
+export async function getAppleAppDetails(appId: string | number, country = 'gb'): Promise<AppStoreApp | null> {
   try {
-    const app = await store.app({ id: appId, lang: 'en-gb', country: 'gb' });
+    const app = await store.app({ id: appId, lang: 'en', country });
     return {
       id: app.id,
       appId: app.appId ?? String(app.id),

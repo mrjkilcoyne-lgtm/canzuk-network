@@ -28,10 +28,14 @@ export function generateReport(sweepId: string, dbPath?: string): string {
 
     // Executive Summary
     lines.push(`## Executive Summary`);
+    const newApps = apps.filter(a => a.isNew);
+    const seenApps = apps.filter(a => !a.isNew);
     const urgent = recommendations.filter(r => r.priority === 'urgent');
     const high = recommendations.filter(r => r.priority === 'high');
     const contactActions = recommendations.filter(r => r.action === 'contact' || r.action === 'partner');
     lines.push(`- **${apps.length}** apps discovered across Apple App Store and Google Play`);
+    lines.push(`- **${newApps.length}** new apps discovered (first time seen)`);
+    lines.push(`- **${seenApps.length}** previously known apps re-confirmed`);
     lines.push(`- **${urgent.length}** urgent actions, **${high.length}** high priority`);
     lines.push(`- **${contactActions.length}** recommended outreach targets`);
     lines.push('');
@@ -55,13 +59,62 @@ export function generateReport(sweepId: string, dbPath?: string): string {
       }
     }
 
-    // Full App Analysis
-    lines.push(`## Full App Analysis`);
+    // New Discoveries
+    if (newApps.length > 0) {
+      lines.push(`## New Discoveries`);
+      lines.push(`_${newApps.length} app(s) seen for the first time in this sweep._`);
+      lines.push('');
+      for (const app of newApps) {
+        const intel = db.getFullAppIntel(app.id);
+        const contacts = db.getContacts(app.id);
+
+        lines.push(`### ${app.appName}`);
+        lines.push(`| Field | Value |`);
+        lines.push(`|-------|-------|`);
+        lines.push(`| Platform | ${app.platform} |`);
+        lines.push(`| Developer | ${app.developer} |`);
+        lines.push(`| Country | ${app.ownershipCountry} |`);
+        lines.push(`| HQ | ${app.hqLocation} |`);
+        lines.push(`| Category | ${app.category} |`);
+        lines.push(`| Rating | ${app.rating ?? 'N/A'} |`);
+        lines.push(`| Downloads | ${app.downloadEstimate ?? 'N/A'} |`);
+        lines.push(`| Store URL | ${app.storeUrl} |`);
+        lines.push('');
+
+        if (intel.disruption) {
+          lines.push(`**Disruption Analysis** (Threat: ${intel.disruption.threatLevel})`);
+          lines.push(`- Disrupted: ${intel.disruption.disruptedParties.join(', ')}`);
+          lines.push(`- Must Adapt: ${intel.disruption.adaptationNeeded.join(', ')}`);
+          lines.push(`- Key Tech: ${intel.disruption.keyTechToAdopt.join(', ')}`);
+          lines.push(`- Opportunity: ${intel.disruption.opportunitySummary}`);
+          lines.push('');
+        }
+
+        const appRecs = recommendations.filter(r => r.appId === app.id);
+        if (appRecs.length > 0) {
+          lines.push(`**Strategic Recommendations**`);
+          for (const rec of appRecs) {
+            lines.push(`- **${rec.action.toUpperCase()}** (${rec.priority}): ${rec.rationale}`);
+            if (rec.suggestedPitch) {
+              lines.push(`  > **Pitch:** ${rec.suggestedPitch.replace(/\n/g, '\n  > ')}`);
+            }
+          }
+          lines.push('');
+        }
+
+        lines.push('---');
+        lines.push('');
+      }
+    }
+
+    // All Apps This Sweep
+    lines.push(`## All Apps This Sweep`);
     for (const app of apps) {
       const intel = db.getFullAppIntel(app.id);
       const contacts = db.getContacts(app.id);
+      const badge = app.isNew ? '[NEW]' : '[SEEN BEFORE]';
 
-      lines.push(`### ${app.appName}`);
+      lines.push(`### ${app.appName} ${badge}`);
       lines.push(`| Field | Value |`);
       lines.push(`|-------|-------|`);
       lines.push(`| Platform | ${app.platform} |`);

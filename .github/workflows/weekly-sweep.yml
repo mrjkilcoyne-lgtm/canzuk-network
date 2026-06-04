@@ -2,8 +2,8 @@ name: Weekly Intel Sweep
 
 on:
   schedule:
-    # Every Monday at 06:00 UTC
-    - cron: '0 6 * * 1'
+    # Every Monday and Thursday at 06:00 UTC
+    - cron: '0 6 * * 1,4'
   workflow_dispatch:
     inputs:
       dry_run:
@@ -15,6 +15,9 @@ on:
 jobs:
   sweep:
     runs-on: ubuntu-latest
+    concurrency:
+      group: intel-sweep
+      cancel-in-progress: false
     timeout-minutes: 60
 
     steps:
@@ -34,6 +37,9 @@ jobs:
       - name: Create data directories
         working-directory: agents
         run: mkdir -p data/reports
+
+      - name: Log sweep configuration
+        run: echo "Sweeping app stores for CANZUK countries - CA, AU, NZ, GB"
 
       - name: Run intelligence sweep
         working-directory: agents

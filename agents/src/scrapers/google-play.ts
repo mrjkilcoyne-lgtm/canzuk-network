@@ -18,13 +18,13 @@ export interface PlayStoreApp {
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-export async function searchGooglePlay(term: string, maxResults = 15): Promise<PlayStoreApp[]> {
+export async function searchGooglePlay(term: string, maxResults = 15, country = 'gb'): Promise<PlayStoreApp[]> {
   try {
     const results = await gplay.search({
       term,
       num: maxResults,
       lang: 'en',
-      country: 'gb',
+      country,
     });
 
     return results.map((app: any) => ({
@@ -48,9 +48,9 @@ export async function searchGooglePlay(term: string, maxResults = 15): Promise<P
   }
 }
 
-export async function getGooglePlayDetails(appId: string): Promise<PlayStoreApp | null> {
+export async function getGooglePlayDetails(appId: string, country = 'gb'): Promise<PlayStoreApp | null> {
   try {
-    const app: any = await gplay.app({ appId, lang: 'en', country: 'gb' });
+    const app: any = await gplay.app({ appId, lang: 'en', country });
     return {
       appId: app.appId,
       title: app.title,

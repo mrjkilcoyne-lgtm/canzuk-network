@@ -22,6 +22,21 @@ export const SEARCH_TERMS = [
   'Australia visa',
   'skilled worker visa',
 
+  // CANZUK-specific immigration & settlement
+  'CANZUK visa',
+  'points based immigration',
+  'PR application Canada',
+  'permanent residency Australia',
+  'expression of interest NZ',
+  'BNO visa UK',
+  'working holiday visa',
+  'tax file number Australia',
+  'SIN number Canada',
+  'NI number UK',
+  'Medicare enrolment',
+  'NHS registration',
+  'settlement scheme',
+
   // Community / social for migrants
   'expat social network',
   'diaspora community',
@@ -74,5 +89,5 @@ export const APP_CATEGORIES = [
 // Max apps to fetch per search term per platform
 export const MAX_RESULTS_PER_TERM = 15;
 
-// Max total apps to process per sweep (cost control)
-export const MAX_APPS_PER_SWEEP = 200;
+// Max total apps to process per sweep (cost control — raised for 4-country CANZUK search)
+export const MAX_APPS_PER_SWEEP = 500;

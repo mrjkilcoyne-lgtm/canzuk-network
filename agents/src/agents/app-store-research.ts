@@ -3,8 +3,8 @@ import { BaseAgent } from './base-agent.js';
 import { searchGooglePlay } from '../scrapers/google-play.js';
 import { searchAppleAppStore } from '../scrapers/apple-app-store.js';
 import { fetchPrivacyPolicy } from '../scrapers/privacy-policy.js';
-import { SEARCH_TERMS, MAX_RESULTS_PER_TERM, MAX_APPS_PER_SWEEP } from '../config/search-terms.js';
-import type { DiscoveredApp, PrivacyPolicyAnalysis } from '../models/types.js';
+import { SEARCH_TERMS, MAX_RESULTS_PER_TERM, MAX_APPS_PER_SWEEP, CANZUK_COUNTRIES } from '../config/search-terms.js';
+import type { DiscoveredApp, PrivacyPolicyAnalysis, ContactInfo } from '../models/types.js';
 
 export class AppStoreResearchAgent extends BaseAgent {
   name = 'AppStoreResearch';
@@ -16,7 +16,7 @@ export class AppStoreResearchAgent extends BaseAgent {
       let newCount = 0;
       let returningCount = 0;
 
-      this.log(`Searching ${SEARCH_TERMS.length} terms across both stores...`);
+      this.log(`Searching ${SEARCH_TERMS.length} terms across both stores in ${CANZUK_COUNTRIES.length} CANZUK countries...`);
 
       for (const term of SEARCH_TERMS) {
         if (apps.length >= MAX_APPS_PER_SWEEP) {
@@ -24,86 +24,132 @@ export class AppStoreResearchAgent extends BaseAgent {
           break;
         }
 
-        // Search both stores in parallel
-        const [googleResults, appleResults] = await Promise.all([
-          searchGooglePlay(term, MAX_RESULTS_PER_TERM),
-          searchAppleAppStore(term, MAX_RESULTS_PER_TERM),
+        // Search all 4 CANZUK stores in parallel for each term
+        const googleSearches = CANZUK_COUNTRIES.map(country =>
+          searchGooglePlay(term, MAX_RESULTS_PER_TERM, country.toLowerCase()),
+        );
+        const appleSearches = CANZUK_COUNTRIES.map(country =>
+          searchAppleAppStore(term, MAX_RESULTS_PER_TERM, country.toLowerCase()),
+        );
+        const [googleResultsByCountry, appleResultsByCountry] = await Promise.all([
+          Promise.all(googleSearches),
+          Promise.all(appleSearches),
         ]);
 
-        // Process Google Play results
-        for (const gApp of googleResults) {
-          const key = `google:${gApp.appId}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
+        const countryCounts: Record<string, { google: number; apple: number }> = {};
 
-          const isNew = !this.db.appExistsPreviously(gApp.appId, 'google');
-          if (isNew) newCount++; else returningCount++;
+        for (let i = 0; i < CANZUK_COUNTRIES.length; i++) {
+          const country = CANZUK_COUNTRIES[i];
+          const googleResults = googleResultsByCountry[i];
+          const appleResults = appleResultsByCountry[i];
+          countryCounts[country] = { google: googleResults.length, apple: appleResults.length };
 
-          const app: DiscoveredApp = {
-            id: uuid(),
-            sweepId: this.ctx.sweepId,
-            appName: gApp.title,
-            platform: 'google',
-            storeUrl: gApp.url,
-            bundleId: gApp.appId,
-            developer: gApp.developer,
-            ownershipCountry: 'Unknown', // Enriched later by DatabaseBuilder
-            hqLocation: 'Unknown',
-            category: gApp.genre,
-            description: gApp.description,
-            rating: gApp.score,
-            downloadEstimate: gApp.installs,
-            releaseDate: gApp.released,
-            lastUpdated: gApp.updated ? new Date(gApp.updated).toISOString() : null,
-            discoveredAt: new Date().toISOString(),
-            isNew,
-          };
+          // Process Google Play results
+          for (const gApp of googleResults) {
+            const key = `google:${gApp.appId}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
 
-          apps.push(app);
+            const isNew = !this.db.appExistsPreviously(gApp.appId, 'google');
+            if (isNew) newCount++; else returningCount++;
 
-          // Fetch and store privacy policy if available (only for new apps)
-          if (isNew && gApp.privacyPolicy) {
-            await this.fetchAndStorePrivacyPolicy(app.id, gApp.privacyPolicy);
+            const app: DiscoveredApp = {
+              id: uuid(),
+              sweepId: this.ctx.sweepId,
+              appName: gApp.title,
+              platform: 'google',
+              storeUrl: gApp.url,
+              bundleId: gApp.appId,
+              developer: gApp.developer,
+              ownershipCountry: 'Unknown', // Enriched later by DatabaseBuilder
+              hqLocation: 'Unknown',
+              category: gApp.genre,
+              description: gApp.description,
+              rating: gApp.score,
+              downloadEstimate: gApp.installs,
+              releaseDate: gApp.released,
+              lastUpdated: gApp.updated ? new Date(gApp.updated).toISOString() : null,
+              discoveredAt: new Date().toISOString(),
+              isNew,
+            };
+
+            apps.push(app);
+
+            if (isNew && (gApp.developerEmail || gApp.developerWebsite)) {
+              const contact: ContactInfo = {
+                id: uuid(),
+                appId: app.id,
+                entityType: 'app_owner',
+                name: gApp.developer,
+                email: gApp.developerEmail ?? null,
+                phone: null,
+                website: gApp.developerWebsite ?? null,
+                linkedIn: null,
+                notes: `Auto-discovered from Google Play (${country} store)`,
+              };
+              this.db.insertContact(contact);
+            }
+
+            // Fetch and store privacy policy if available (only for new apps)
+            if (isNew && gApp.privacyPolicy) {
+              await this.fetchAndStorePrivacyPolicy(app.id, gApp.privacyPolicy);
+            }
+          }
+
+          // Process Apple App Store results
+          for (const aApp of appleResults) {
+            const key = `apple:${aApp.appId}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+
+            const isNew = !this.db.appExistsPreviously(aApp.appId, 'apple');
+            if (isNew) newCount++; else returningCount++;
+
+            const app: DiscoveredApp = {
+              id: uuid(),
+              sweepId: this.ctx.sweepId,
+              appName: aApp.title,
+              platform: 'apple',
+              storeUrl: aApp.url,
+              bundleId: aApp.appId,
+              developer: aApp.developer,
+              ownershipCountry: 'Unknown',
+              hqLocation: 'Unknown',
+              category: aApp.genre,
+              description: aApp.description,
+              rating: aApp.score,
+              downloadEstimate: null,
+              releaseDate: aApp.released,
+              lastUpdated: aApp.updated,
+              discoveredAt: new Date().toISOString(),
+              isNew,
+            };
+
+            apps.push(app);
+
+            if (isNew && aApp.developerWebsite) {
+              const contact: ContactInfo = {
+                id: uuid(),
+                appId: app.id,
+                entityType: 'app_owner',
+                name: aApp.developer,
+                email: null,
+                phone: null,
+                website: aApp.developerWebsite,
+                linkedIn: null,
+                notes: `Auto-discovered from Apple App Store (${country} store)`,
+              };
+              this.db.insertContact(contact);
+            }
+
+            if (isNew && aApp.privacyPolicy) {
+              await this.fetchAndStorePrivacyPolicy(app.id, aApp.privacyPolicy);
+            }
           }
         }
 
-        // Process Apple App Store results
-        for (const aApp of appleResults) {
-          const key = `apple:${aApp.appId}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
-
-          const isNew = !this.db.appExistsPreviously(aApp.appId, 'apple');
-          if (isNew) newCount++; else returningCount++;
-
-          const app: DiscoveredApp = {
-            id: uuid(),
-            sweepId: this.ctx.sweepId,
-            appName: aApp.title,
-            platform: 'apple',
-            storeUrl: aApp.url,
-            bundleId: aApp.appId,
-            developer: aApp.developer,
-            ownershipCountry: 'Unknown',
-            hqLocation: 'Unknown',
-            category: aApp.genre,
-            description: aApp.description,
-            rating: aApp.score,
-            downloadEstimate: null,
-            releaseDate: aApp.released,
-            lastUpdated: aApp.updated,
-            discoveredAt: new Date().toISOString(),
-            isNew,
-          };
-
-          apps.push(app);
-
-          if (isNew && aApp.privacyPolicy) {
-            await this.fetchAndStorePrivacyPolicy(app.id, aApp.privacyPolicy);
-          }
-        }
-
-        this.log(`"${term}": ${googleResults.length} Google + ${appleResults.length} Apple results. Total unique: ${apps.length}`);
+        const breakdown = CANZUK_COUNTRIES.map(c => `${c}: ${countryCounts[c].google}G+${countryCounts[c].apple}A`).join(', ');
+        this.log(`"${term}": ${breakdown}. Total unique: ${apps.length}`);
       }
 
       // Store only genuinely new apps (INSERT OR IGNORE handles DB-level dedup)

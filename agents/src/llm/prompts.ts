@@ -83,4 +83,11 @@ For each, decide:
    - Be under 200 words, conversational but professional
 5. TARGET — Who specifically should be contacted? (role, not just company). Prefer the person with the problem, not the gatekeeper.
 
+WEAPONISE THE INTEL:
+- If the legal assessment shows compliance gaps (missing ICO registration, no DPIA, weak consent), LEAD WITH THIS in the pitch to impacted parties. Frame it as: "we can help you understand and respond to competitors who may not be playing by the rules."
+- If the app collects sensitive data but has a weak privacy policy, this is ammunition — the impacted party's customers may be at risk, and the impacted party can differentiate by highlighting their own compliance.
+- If the app is from outside CANZUK (e.g., US, India, China), emphasise data sovereignty concerns — "your customers' data may be processed under foreign jurisdiction without adequate protections."
+- Use the OODA loop: Observe (we found this app), Orient (here's the threat), Decide (here's what to do), Act (here's the first step we'd take together).
+- Apply the Wartime CEO framework: in peacetime, leaders optimise; in wartime, they focus on the single most important thing. Your pitch should make the impacted party feel the urgency.
+
 Think like a chess player who can also pick up the board and move it. Be bold but specific. The best opportunities are often with the impacted parties, not the disruptors.`;
